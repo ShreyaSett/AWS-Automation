@@ -1,0 +1,64 @@
+import boto3
+import pandas as pd
+
+client = boto3.client('ec2')
+response2 = client.describe_network_interfaces()
+
+## Print the list of all the available Network Interfaces:
+list_of_available_eni = []
+for a in response2['NetworkInterfaces']:
+	if a['Status'] == 'available':
+		list_of_available_eni.append(a['NetworkInterfaceId'])
+print("Here is a list of " + str(len(list_of_available_eni)) + " available Network Interfaces:")
+for eni in list_of_available_eni:
+	print(eni, '\n')
+
+## Print the list of all the In-Use Network Interfaces:
+list_of_in_use_eni = []
+for b in response2['NetworkInterfaces']:
+	if b['Status'] == 'in-use':
+		list_of_in_use_eni.append(b['NetworkInterfaceId'])
+print("Here is a list of " + str(len(list_of_in_use_eni)) + " in-use Network Interfaces:")
+for j in list_of_in_use_eni:
+	print(j, '\n')
+
+## Export and print the details of all the In-Use Network Interfaces and the corresponding Security Group details to excel:
+my_dict = {}
+eni = []
+sg_id = []
+sg_name =[]
+vpc = []
+inboundpr = []
+inboundip = []
+outboundpr = []
+outboundip = []
+des = []
+for c in response2['NetworkInterfaces']:
+	for d in c['Groups']:
+		response1 = client.describe_security_groups(GroupIds = [d['GroupId']])
+		for r in response1['SecurityGroups']:
+			for i in r['IpPermissions']:
+				for m in r['IpPermissionsEgress']:
+					for k in i['IpRanges']:
+						for l in m['IpRanges']:
+							eni.append(c['NetworkInterfaceId']) 
+							sg_id.append(r['GroupId'])
+							sg_name.append(r['GroupName'])
+							vpc.append(r['VpcId'])
+							inboundpr.append(i['IpProtocol'])
+							inboundip.append(k['CidrIp'])
+							outboundpr.append(m['IpProtocol'])
+							outboundpr.append(l['CidrIp'])
+							des.append(c['Description'])
+my_dict['ENI'] = eni
+my_dict['SG-ID'] = sg_id
+my_dict['SG-Name'] = sg_name
+my_dict['VPC'] = vpc
+my_dict['INBOUND PROTOCOL'] = inboundpr
+my_dict['INBOUND IP'] = inboundip
+my_dict['OUTBOUND PROTOCOL'] = inboundpr
+my_dict['OUTBOUND IP'] = inboundip
+my_dict['DESCRIPTION'] = des
+df = pd.DataFrame(my_dict, columns = ['ENI', 'SG-ID', 'SG-Name', 'VPC', 'INBOUND PROTOCOL', 'INBOUND IP', 'OUTBOUND PROTOCOL', 'OUTBOUND IP', 'DESCRIPTION'])
+
+df.to_excel (r'D:\Users\ssett\Desktop\SG_INFO.xlsx', index = False, header=True)

@@ -1,0 +1,12 @@
+us-west-2:
+SG: 35
+Network Interface = 608
+In use Network Interface = 596
+Available Network Interface = 12 
+In use Security Groups = 684208
+
+1.List of all the available network interfaces
+2. List of all the in-use network interfaces
+3. For the in-use network interfaces:
+Name of network Interface  Name of associated SG  SG Name  VPC ID  Inbound Rule Protocol  Inbound Rule IP Range Outbound Rule Protocol  Outbound Rule IP Range
+

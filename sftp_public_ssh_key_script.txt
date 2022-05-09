@@ -1,0 +1,41 @@
+import boto3
+import pandas as pd
+from datetime import datetime
+import time
+import pytz
+client = boto3.client('transfer')
+response = client.list_users(ServerId='s-339c3793ab6e41eba')
+
+un = []
+count = []
+k = []
+di = []
+d = {}
+
+for i in response['Users']:
+	response1 = client.describe_user(
+    	ServerId='s-339c3793ab6e41eba',
+    	UserName=i['UserName']
+	)
+	for j in response1['User']['SshPublicKeys']:
+		print(i['UserName'], '\t', i['SshPublicKeyCount'], '\t', j['SshPublicKeyBody'], '\t', j['DateImported'])
+"""		
+		un.append(i['UserName'])
+		count.append(i['SshPublicKeyCount'])
+		k.append(j['SshPublicKeyBody'])
+		di.append(j['DateImported'])
+
+d['USER NAME'] = un
+d['PUBLIC KEY COUNT'] = count
+d['PUBLIC KEY'] = k
+di['KEY IMPORT DATE'] = di
+
+df = pd.DataFrame(d, columns = ['USER NAME', 'PUBLIC KEY COUNT', 'PUBLIC KEY', 'KEY IMPORT DATE'])
+df['KEY IMPORT DATE'] = pd.to_datetime(df['KEY IMPORT DATE'])
+df['KEY IMPORT DATE'] = df['KEY IMPORT DATE'].apply(lambda g: datetime.strftime(g,"%Y-%m-%d %H:%M:%S"))
+df['KEY IMPORT DATE'] = pd.to_datetime(df['KEY IMPORT DATE'])
+writer = pd.ExcelWriter(r'D:\Users\ssett\sftp.xlsx')
+df.to_excel (writer, sheet_name='Sheet1', index = False, header=True)
+writer.save()
+
+"""

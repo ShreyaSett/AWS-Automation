@@ -1,0 +1,44 @@
+import boto3
+import pandas as pd
+import botocore
+s3_resource = boto3.resource('s3')
+
+my_file = open("bucketnames.txt", "r")
+data = my_file.read()
+list_of_buckets = data.split("\n")
+#print(list_of_buckets)
+my_file.close()
+di = {}
+b = []
+o = []
+sc = []
+for i in list_of_buckets:
+	try:
+		bucket_name = s3_resource.Bucket(i)
+		client = boto3.client('s3')
+		response2 = client.list_objects_v2(Bucket= i)
+		if response2['KeyCount']!= 0:
+			for obj in bucket_name.objects.all():
+				b.append(i)
+				o.append(obj.key)
+				sc.append(obj.storage_class)
+		else:
+			b.append(i)
+			o.append('No Objects')
+			sc.append('NA')
+	except botocore.exceptions.ClientError as err:
+		b.append(i)
+		o.append(err.response['Error']['Message'])
+		sc.append('NA')
+#		print('Error Message: {}'.format(err.response['Error']['Message']))
+		if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+			continue
+di['Bucket Name'] = b
+di['Object'] = o
+di['Storage Class'] = sc
+df = pd.DataFrame(di, columns = ['Bucket Name', 'Object', 'Storage Class'])
+writer = pd.ExcelWriter(r'stcl_data_2.xlsx')
+
+df.to_excel(writer, index = False, header=True)
+
+writer.save()

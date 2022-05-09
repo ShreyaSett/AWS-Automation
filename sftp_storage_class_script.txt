@@ -1,0 +1,42 @@
+import boto3
+import pandas as pd
+#import botocore.exceptions
+client = boto3.client('s3')
+#response = client.list_buckets()
+list_of_buckets = ["caltimes-dsi", "caltimes-erp-prod", "caltimes-inka", "caltimes-mg2", "caltimes-mulesoft-test", "caltimes-nonprod-sftp", "caltimes-prod-sftp", "caltimes-it-report", "caltimes-prod-sftp", "caltimes-ssor", "caltimes-wd", "dfp-billing-file", "erp-non-prod", "recurly-non-prod", "recurly-prod", "sales-cloud-billingfile-dev"]
+di = {}
+b = []
+o = []
+sc = []
+for i in list_of_buckets:
+	response2 = client.list_objects_v2(Bucket= i)
+	if response2['KeyCount']!= 0:
+		for j in response2['Contents']:
+			b.append(i)
+			o.append(j['Key'])
+			sc.append(j['StorageClass'])
+#			print(i, '\t', j['Key'], '\t', j['StorageClass'])
+	else:
+		b.append(i)
+		o.append('NO OBJECTS')
+		sc.append('NA')
+#		print(i, '\t', 'NO OBJECTS', '\t', 'NA')
+
+
+di['Bucket Name'] = b
+di['Object'] = o
+di['Storage Class'] = sc
+df = pd.DataFrame(di, columns = ['Bucket Name', 'Object', 'Storage Class'])
+writer = pd.ExcelWriter(r's3storageclass.xlsx')
+
+df.to_excel(writer, index = False, header=True)
+
+writer.save()
+
+#		print(i, '\t', j['Key'], '\t', j['StorageClass'])
+"""
+	except botocore.exceptions.ClientError as err:
+        print('Error Message: {}'.format(err.response['Error']['Message']))
+        if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+        	continue
+"""	

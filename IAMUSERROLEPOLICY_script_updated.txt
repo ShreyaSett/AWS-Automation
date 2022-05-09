@@ -1,0 +1,197 @@
+import boto3
+import botocore
+from datetime import datetime
+import time
+import pytz
+import pandas as pd
+client = boto3.client('iam')
+response1 = client.list_roles()
+response10 = client.list_users()
+
+
+my_dict_1 = {}
+my_dict_2 = {}
+my_dict_3 = {}
+
+rn = []
+un = []
+gn = []
+rp = []
+up = []
+gp = []
+
+rpm = []
+upm = []
+gpm = []
+
+rcd = []
+ucd = []
+ugcd = []
+gcd = []
+
+upr = []
+upc = []
+upd = []
+
+rpr = []
+rpc = []
+rpd = []
+
+ug = []
+gpr = []
+gpc = []
+gpd = []
+
+for r in response1['Roles']:
+	response2 = client.list_attached_role_policies(RoleName = r['RoleName'])
+	for i in response2['AttachedPolicies']:
+		response4 = client.get_policy(PolicyArn = i['PolicyArn'])
+		if ((i['PolicyArn']).split('::')[-1].split(':')[0]) == 'aws':
+			rn.append(r['RoleName'])
+			rcd.append(r['CreateDate'])
+			rp.append(i['PolicyName'])
+			rpr.append(i['PolicyArn'])
+			rpm.append('AWS Managed Policy')
+			rpc.append(response4['Policy']['CreateDate'])
+			rpd.append(response4['Policy']['UpdateDate'])
+		else:
+			rn.append(r['RoleName'])
+			rcd.append(r['CreateDate'])
+			rp.append(i['PolicyName'])
+			rpr.append(i['PolicyArn'])
+			rpm.append('Customer Managed Policy')
+			rpc.append(response4['Policy']['CreateDate'])
+			rpd.append(response4['Policy']['UpdateDate'])
+
+
+for r10 in response10['Users']:
+	response20 = client.list_attached_user_policies(UserName = r10['UserName'])
+	for i20 in response20['AttachedPolicies']:
+		response40 = client.get_policy(PolicyArn = i20['PolicyArn'])
+		if ((i20['PolicyArn']).split('::')[-1].split(':')[0]) == 'aws':
+			un.append(r10['UserName'])
+			ucd.append(r10['CreateDate'])
+			up.append(i20['PolicyName'])
+			upr.append(i20['PolicyArn'])
+			upm.append('AWS Managed Policy')
+			upc.append(response40['Policy']['CreateDate'])
+			upd.append(response40['Policy']['UpdateDate'])
+		else:
+			un.append(r10['UserName'])
+			ucd.append(r10['CreateDate'])
+			up.append(i20['PolicyName'])
+			upr.append(i20['PolicyArn'])
+			upm.append('Customer Managed Policy')
+			upc.append(response40['Policy']['CreateDate'])
+			upd.append(response40['Policy']['UpdateDate'])
+
+
+for r90 in response10['Users']:
+	response30 = client.list_groups_for_user(UserName = r90['UserName'])
+	for i70 in response30['Groups']:
+		response60 = client.list_attached_group_policies(GroupName = i70['GroupName'])
+		for j in response60['AttachedPolicies']:
+			response80 = client.get_policy(PolicyArn = j['PolicyArn'])
+			if ((j['PolicyArn']).split('::')[-1].split(':')[0]) == 'aws':
+				ug.append(r90['UserName'])
+				ugcd.append(r90['CreateDate'])
+				gn.append(i70['GroupName'])
+				gcd.append(i70['CreateDate'])
+				gp.append(j['PolicyName'])
+				gpr.append(j['PolicyArn'])
+				gpm.append('AWS Managed Policy')
+				gpc.append(response80['Policy']['CreateDate'])
+				gpd.append(response80['Policy']['UpdateDate'])
+			else:
+				ug.append(r90['UserName'])
+				ugcd.append(r90['CreateDate'])
+				gn.append(i70['GroupName'])
+				gcd.append(i70['CreateDate'])
+				gp.append(j['PolicyName'])
+				gpr.append(j['PolicyArn'])
+				gpm.append('Customer Managed Policy')
+				gpc.append(response80['Policy']['CreateDate'])
+				gpd.append(response80['Policy']['UpdateDate'])
+
+
+my_dict_1['Role Name'] = rn
+my_dict_1['Role Creation Date'] = rcd
+my_dict_1['Role Attached Policy Name'] = rp
+my_dict_1['Role Attached Policy ARN'] = rpr
+my_dict_1['Role Attached Policy Management'] = rpm
+my_dict_1['Role Attached Policy Creation Date'] = rpc
+my_dict_1['Role Attached Policy Update Date'] = rpd
+
+my_dict_2['IAM User Name'] = un
+my_dict_2['IAM User Creation Date'] = ucd
+my_dict_2['User Direct Attached Policy Name'] = up
+my_dict_2['User Direct Attached Policy ARN'] = upr
+my_dict_2['User Direct Attached Policy Management'] = upm
+my_dict_2['User Direct Attached Policy Creation Date'] = upc
+my_dict_2['User Direct Attached Policy Update Date'] = upd
+
+my_dict_3['User Name'] = ug
+my_dict_3['User Creation Date'] = ugcd
+my_dict_3['Group Name'] = gn
+my_dict_3['Group Creation Date'] = gcd
+my_dict_3['Inherited Policy Name'] = gp
+my_dict_3['Inherited Policy ARN'] = gpr
+my_dict_3['Inherited Policy Management'] = gpm
+my_dict_3['Inherited Policy Creation Date'] = gpc
+my_dict_3['Inherited Policy Update Date'] = gpd
+
+
+df1 = pd.DataFrame(my_dict_1, columns = ['Role Name', 'Role Creation Date', 'Role Attached Policy Name', 'Role Attached Policy ARN', 'Role Attached Policy Management', 'Role Attached Policy Creation Date', 'Role Attached Policy Update Date'])
+df2 = pd.DataFrame(my_dict_2, columns = ['IAM User Name', 'IAM User Creation Date', 'User Direct Attached Policy Name', 'User Direct Attached Policy ARN', 'User Direct Attached Policy Management', 'User Direct Attached Policy Creation Date', 'User Direct Attached Policy Update Date'])
+df3 = pd.DataFrame(my_dict_3, columns = ['User Name', 'User Creation Date', 'Group Name', 'Group Creation Date', 'Inherited Policy Name', 'Inherited Policy ARN', 'Inherited Policy Management', 'Inherited Policy Creation Date', 'Inherited Policy Update Date'])
+
+
+df1['Role Creation Date'] = pd.to_datetime(df1['Role Creation Date'])
+df1['Role Attached Policy Creation Date'] = pd.to_datetime(df1['Role Attached Policy Creation Date'])
+df1['Role Attached Policy Update Date'] = pd.to_datetime(df1['Role Attached Policy Update Date'])
+df2['IAM User Creation Date'] = pd.to_datetime(df2['IAM User Creation Date'])
+df2['User Direct Attached Policy Creation Date'] = pd.to_datetime(df2['User Direct Attached Policy Creation Date'])
+df2['User Direct Attached Policy Update Date'] = pd.to_datetime(df2['User Direct Attached Policy Update Date'])
+df3['User Creation Date'] = pd.to_datetime(df3['User Creation Date'])
+df3['Group Creation Date'] =pd.to_datetime(df3['Group Creation Date'])
+df3['Inherited Policy Creation Date'] = pd.to_datetime(df3['Inherited Policy Creation Date'])
+df3['Inherited Policy Update Date'] = pd.to_datetime(df3['Inherited Policy Update Date'])
+
+df1['Role Creation Date'] = df1['Role Creation Date'].apply(lambda g: datetime.strftime(g,"%Y-%m-%d %H:%M:%S"))
+df1['Role Attached Policy Creation Date'] = df1['Role Attached Policy Creation Date'].apply(lambda a: datetime.strftime(a,"%Y-%m-%d %H:%M:%S"))
+df1['Role Attached Policy Update Date'] = df1['Role Attached Policy Update Date'].apply(lambda b: datetime.strftime(b,"%Y-%m-%d %H:%M:%S"))
+df2['IAM User Creation Date'] = df2['IAM User Creation Date'].apply(lambda h: datetime.strftime(h,"%Y-%m-%d %H:%M:%S"))
+df2['User Direct Attached Policy Creation Date'] = df2['User Direct Attached Policy Creation Date'].apply(lambda c: datetime.strftime(c,"%Y-%m-%d %H:%M:%S"))
+df2['User Direct Attached Policy Update Date'] = df2['User Direct Attached Policy Update Date'].apply(lambda d: datetime.strftime(d,"%Y-%m-%d %H:%M:%S"))
+df3['User Creation Date'] = df3['User Creation Date'].apply(lambda i: datetime.strftime(i,"%Y-%m-%d %H:%M:%S"))
+df3['Group Creation Date'] = df3['Group Creation Date'].apply(lambda j: datetime.strftime(j,"%Y-%m-%d %H:%M:%S"))
+df3['Inherited Policy Creation Date'] = df3['Inherited Policy Creation Date'].apply(lambda e: datetime.strftime(e,"%Y-%m-%d %H:%M:%S"))
+df3['Inherited Policy Update Date'] = df3['Inherited Policy Update Date'].apply(lambda f: datetime.strftime(f,"%Y-%m-%d %H:%M:%S"))
+
+df1['Role Creation Date'] = pd.to_datetime(df1['Role Creation Date'])
+df1['Role Attached Policy Creation Date'] = pd.to_datetime(df1['Role Attached Policy Creation Date'])
+df1['Role Attached Policy Update Date'] = pd.to_datetime(df1['Role Attached Policy Update Date'])
+df2['IAM User Creation Date'] = pd.to_datetime(df2['IAM User Creation Date'])
+df2['User Direct Attached Policy Creation Date'] = pd.to_datetime(df2['User Direct Attached Policy Creation Date'])
+df2['User Direct Attached Policy Update Date'] = pd.to_datetime(df2['User Direct Attached Policy Update Date'])
+df3['User Creation Date'] = pd.to_datetime(df3['User Creation Date'])
+df3['Group Creation Date'] =pd.to_datetime(df3['Group Creation Date'])
+df3['Inherited Policy Creation Date'] = pd.to_datetime(df3['Inherited Policy Creation Date'])
+df3['Inherited Policy Update Date'] = pd.to_datetime(df3['Inherited Policy Update Date'])
+
+writer = pd.ExcelWriter(r'IAMUSER&ROLEPOLICYREPORT.xlsx', datetime_format = 'dd-mm-yyyy')
+
+df1.to_excel (writer, sheet_name='Role_Policies', index = False, header=True)
+df2.to_excel (writer, sheet_name='User_Direct-attached_Policies', index = False, header=True)
+df3.to_excel (writer, sheet_name='User_Inherited_Policies', index = False, header=True)
+
+writer.save()
+
+		
+
+
+
+
+
+
+

@@ -1,0 +1,141 @@
+import boto3
+import botocore
+from datetime import datetime
+import pytz
+import pandas as pd
+client = boto3.client('s3')
+response1 = client.list_buckets()
+
+bn1 = []
+cd = []
+odn = []
+oid = []
+r1 = []
+bn2 = []
+gid = []
+gdn = []
+gty = []
+gp = []
+r2 = []
+bn3 = []
+bp = []
+r3 = []
+bn4 =[]
+bisp = []
+r4 = []
+
+my_dict_1 = {}
+my_dict_2 = {}
+my_dict_3 = {}
+my_dict_4 = {}
+
+for i in response1['Buckets']:
+	try:
+		bn1.append(i['Name'])
+		cd.append(i['CreationDate'])
+		odn.append(response1['Owner']['DisplayName'])
+		oid.append(response1['Owner']['ID'])
+		r1.append('NA')
+	except botocore.exceptions.ClientError as err:
+		bn1.append(i['Name'])
+		cd.append('NA')
+		odn.append('NA')
+		oid.append('NA')
+		r1.append(err.response['Error']['Message'])
+#		print('Error Message: {}'.format(err.response['Error']['Message']))
+		if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+			continue
+for i in response1['Buckets']:
+	try:
+		response2 = client.get_bucket_acl(Bucket= i['Name'])
+		for j in response2['Grants']:
+			if j['Grantee']['Type'] == "Group":
+				bn2.append(i['Name'])
+				gid.append('NA')
+				gdn.append(j['Grantee']['URI'])
+				gty.append(j['Grantee']['Type'])
+				gp.append(j['Permission'])
+				r2.append('NA')
+			else:
+				bn2.append(i['Name'])
+				gid.append(j['Grantee']['ID'])
+				gdn.append(j['Grantee']['DisplayName'])
+				gty.append(j['Grantee']['Type'])
+				gp.append(j['Permission'])
+				r2.append('NA')
+	except botocore.exceptions.ClientError as err:
+		bn2.append(i['Name'])
+		gid.append('NA')
+		gdn.append('NA')
+		gty.append('NA')
+		gp.append('NA')
+		r2.append(err.response['Error']['Message'])
+#		print('Error Message: {}'.format(err.response['Error']['Message']))
+		if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+			continue
+for i in response1['Buckets']:
+	try:
+		response3 = client.get_bucket_policy(Bucket = i['Name'])
+		bn3.append(i['Name'])
+		bp.append(response3['Policy'])
+		r3.append('NA')
+	except botocore.exceptions.ClientError as err:
+		bn3.append(i['Name'])
+		bp.append('NA')
+		r3.append(err.response['Error']['Message'])
+#		print('Error Message: {}'.format(err.response['Error']['Message']))
+		if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+			continue
+for i in response1['Buckets']:
+	try:
+		response5 = client.get_bucket_policy_status(Bucket = i['Name'])
+		bn4.append(i['Name'])
+		bisp.append(response5['PolicyStatus']['IsPublic'])
+		r4.append('NA')
+	except botocore.exceptions.ClientError as err:
+		bn4.append(i['Name'])
+		bisp.append('NA')
+		r4.append(err.response['Error']['Message'])
+#		print('Error Message: {}'.format(err.response['Error']['Message']))
+		if err.response['Error']['Code'] in ['Access Denied', 'NoSuchBucketPolicy']:
+			continue
+
+
+my_dict_1['Bucket Names'] = bn1
+my_dict_1['Bucket Creation Date/Last Edited Date'] = cd
+my_dict_1['Owner Display Name'] = odn
+my_dict_1['Owner ID'] = oid
+my_dict_1['Remarks'] = r1
+
+my_dict_2['Bucket Names'] = bn2
+my_dict_2['Grantee ID'] = gid
+my_dict_2['Grantee Display Name/CloudWatch S3 Log Group ARN'] = gdn
+my_dict_2['Grantee Type'] = gty
+my_dict_2['Permission'] = gp
+my_dict_2['Remarks'] = r2
+
+my_dict_3['Bucket Names'] = bn3
+my_dict_3['Bucket Policy'] = bp
+my_dict_3['Remarks'] = r3
+
+my_dict_4['Bucket Names'] = bn4
+my_dict_4['PUBLIC(TRUE/FALSE)'] = bisp
+my_dict_4['Remarks'] = r4
+
+df1 = pd.DataFrame(my_dict_1, columns = ['Bucket Names', 'Bucket Creation Date/Last Edited Date', 'Owner Display Name', 'Owner ID', 'Remarks'])
+df2 = pd.DataFrame(my_dict_2, columns = ['Bucket Names', 'Grantee ID', 'Grantee Display Name/CloudWatch S3 Log Group ARN', 'Grantee Type', 'Permission', 'Remarks'])
+df3 = pd.DataFrame(my_dict_3, columns = ['Bucket Names', 'Bucket Policy', 'Remarks'])
+df4 = pd.DataFrame(my_dict_4, columns = ['Bucket Names', 'PUBLIC(TRUE/FALSE)', 'Remarks'])
+
+df1['Bucket Creation Date/Last Edited Date'] = pd.to_datetime(df1['Bucket Creation Date/Last Edited Date'])
+df1['Bucket Creation Date/Last Edited Date'] = df1['Bucket Creation Date/Last Edited Date'].apply(lambda a: datetime.strftime(a,"%Y-%m-%d %H:%M:%S"))
+df1['Bucket Creation Date/Last Edited Date'] = pd.to_datetime(df1['Bucket Creation Date/Last Edited Date'])
+
+writer = pd.ExcelWriter(r's3_bucket_acl_policies.xlsx')
+
+df1.to_excel (writer, sheet_name='s3 Bucket List', index = False, header=True)
+df2.to_excel (writer, sheet_name='Bucket ACL', index = False, header=True)
+df3.to_excel (writer, sheet_name='Bucket Policy', index = False, header=True)
+df4.to_excel (writer, sheet_name='Bucket Public Permission', index = False, header=True)
+
+writer.save()
